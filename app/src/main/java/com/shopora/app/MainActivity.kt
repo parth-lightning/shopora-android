@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawingPadding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -24,6 +25,7 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -133,6 +135,8 @@ private fun ShopScreen(onAdd: (Product) -> Unit) {
 
 @Composable
 private fun CartScreen(cart: Cart, onRemove: (String) -> Unit, onKeepShopping: () -> Unit, onCheckout: (Int) -> Unit) {
+    var discount by remember { mutableStateOf<Discount?>(null) }
+    var discountError by remember { mutableStateOf<String?>(null) }
     Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
         if (cart.lines.isEmpty()) {
             Text("Your cart is empty.", fontSize = 17.sp, color = Ink)
@@ -153,9 +157,38 @@ private fun CartScreen(cart: Cart, onRemove: (String) -> Unit, onKeepShopping: (
         }
         HorizontalDivider()
         Spacer(Modifier.height(12.dp))
-        Text("Total: ${money(cart.subtotalCents)}", fontSize = 20.sp, fontWeight = FontWeight.SemiBold, color = Ink)
+        DiscountField(applied = discount, error = discountError, onApply = { input ->
+            val found = findDiscount(input)
+            discount = found
+            discountError = if (found == null) "\"${input.trim()}\" isn't a valid code" else null
+        })
         Spacer(Modifier.height(12.dp))
-        Button(onClick = { onCheckout(cart.subtotalCents) }, modifier = Modifier.fillMaxWidth()) { Text("Checkout") }
+        val total = totalCents(cart.subtotalCents, discount)
+        Text("Subtotal: ${money(cart.subtotalCents)}", fontSize = 16.sp, color = Ink)
+        discount?.let { Text("Discount (${it.code}, ${it.label}): -${money(it.amountCents(cart.subtotalCents))}", fontSize = 16.sp, color = Brand) }
+        Text("Total: ${money(total)}", fontSize = 20.sp, fontWeight = FontWeight.SemiBold, color = Ink)
+        Spacer(Modifier.height(12.dp))
+        Button(onClick = { onCheckout(total) }, modifier = Modifier.fillMaxWidth()) { Text("Checkout") }
+    }
+}
+
+@Composable
+private fun DiscountField(applied: Discount?, error: String?, onApply: (String) -> Unit) {
+    var input by remember { mutableStateOf("") }
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        OutlinedTextField(
+            value = input,
+            onValueChange = { input = it },
+            label = { Text("Discount code") },
+            singleLine = true,
+            modifier = Modifier.weight(1f),
+        )
+        Spacer(Modifier.width(8.dp))
+        Button(onClick = { onApply(input) }) { Text("Apply") }
+    }
+    when {
+        error != null -> Text(error, color = Color(0xFFB3261E), fontSize = 14.sp)
+        applied != null -> Text("${applied.code} applied", color = Brand, fontSize = 14.sp)
     }
 }
 
