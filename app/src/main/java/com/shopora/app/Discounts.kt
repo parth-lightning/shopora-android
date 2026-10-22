@@ -19,12 +19,12 @@ private val codes = listOf(Discount.Percent("SAVE10", 10), Discount.Fixed("WELCO
 fun findDiscount(input: String): Discount? {
     val code = input.trim().uppercase()
     // Codes printed on receipts start with a '#'.
-    val normalized = if (code.first() == '#') code.drop(1) else code
+    val normalized = code.removePrefix("#")
     return codes.find { it.code == normalized }
 }
 
 /** What the shopper pays after the discount. */
 fun totalCents(subtotalCents: Int, discount: Discount?): Int {
     val off = discount?.amountCents(subtotalCents) ?: 0
-    return subtotalCents - off - (if (discount is Discount.Percent) off else 0)
+    return subtotalCents - off
 }

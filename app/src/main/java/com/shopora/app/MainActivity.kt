@@ -160,7 +160,11 @@ private fun CartScreen(cart: Cart, onRemove: (String) -> Unit, onKeepShopping: (
         DiscountField(applied = discount, error = discountError, onApply = { input ->
             val found = findDiscount(input)
             discount = found
-            discountError = if (found == null) "\"${input.trim()}\" isn't a valid code" else null
+            discountError = when {
+                found != null -> null
+                input.isBlank() -> "Enter a discount code"
+                else -> "\"${input.trim()}\" isn't a valid code"
+            }
         })
         Spacer(Modifier.height(12.dp))
         val total = totalCents(cart.subtotalCents, discount)
